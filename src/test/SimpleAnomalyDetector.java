@@ -5,12 +5,14 @@ import java.util.List;
 
 public class SimpleAnomalyDetector implements TimeSeriesAnomalyDetector {
 	
-	List<CorrelatedFeatures> NormalModel;
-	float globalthreshold;
+	private List<CorrelatedFeatures> NormalModel;
+	private float pearsonThreshold;
+	private float addedPresentageThreshold;
 	
 	public SimpleAnomalyDetector() {
 		NormalModel = new ArrayList<CorrelatedFeatures>();
-		globalthreshold = (float)0.2;
+		addedPresentageThreshold= 0.1f;
+		pearsonThreshold = 0.9f;
 	}
 
 	private void addFeatursToModel(int feature1Index,int feature2Index, float[][] table, ArrayList<String> featusName)
@@ -22,7 +24,7 @@ public class SimpleAnomalyDetector implements TimeSeriesAnomalyDetector {
 		Line lin_reg = StatLib.linear_reg(points);
 		float threshold = 0;
 		for (int i = 0; i < points.length; i++) {
-			threshold = Math.max(threshold, StatLib.dev(points[i],lin_reg));
+			threshold = Math.max(threshold, (1 + addedPresentageThreshold) * StatLib.dev(points[i],lin_reg));
 		}
 		NormalModel.add(new CorrelatedFeatures(feature1,feature2,corrlation,lin_reg,threshold));
 	}
@@ -32,20 +34,17 @@ public class SimpleAnomalyDetector implements TimeSeriesAnomalyDetector {
 		float max,curr;
 		int featureIndex = 0;
 		float[][] values = TimeSeries.getArrayTs(ts);
-		ArrayList<Integer> corolated_featurs = new ArrayList<Integer>();
 		for (int i = 0; i < ts.getFeatureName().size() - 1; i++) {
-			if(corolated_featurs.contains(i))
-				continue;
-			max=0;
+			max = 0;
 			for (int j = i+1; j < ts.getFeatureName().size(); j++) {
-				curr = StatLib.pearson(values[i],values[j]);
+				curr = Math.abs(StatLib.pearson(values[i],values[j]));
 				if(curr > max) {
-					max=curr;
+					max = curr;
 					featureIndex = j;
 				}
 			}
-			corolated_featurs.add(featureIndex);
-			addFeatursToModel(i, featureIndex, values, ts.getFeatureName());
+			if(max > pearsonThreshold)
+				addFeatursToModel(i, featureIndex, values, ts.getFeatureName());
 		}
 	}
 
@@ -60,7 +59,7 @@ public class SimpleAnomalyDetector implements TimeSeriesAnomalyDetector {
 			for (int j = 0; j < ts.getValuesTable().get(0).size(); j++) {
 				prediction = NormalModel.get(i).lin_reg.f(ts.getValuesTable().get(feature1).get(j));
 				realety = ts.getValuesTable().get(feature2).get(j);
-				if(Math.abs(prediction - realety) > NormalModel.get(i).threshold + globalthreshold)
+				if(Math.abs(prediction - realety) > NormalModel.get(i).threshold)
 				{
 					result.add(new AnomalyReport(NormalModel.get(i).feature1 + "-" + NormalModel.get(i).feature2, j + 1));
 				}
@@ -72,4 +71,13 @@ public class SimpleAnomalyDetector implements TimeSeriesAnomalyDetector {
 	public List<CorrelatedFeatures> getNormalModel(){
 		return NormalModel;
 	}
+	
+	public void setPearsonThreshold(float newVal) {
+		pearsonThreshold = newVal;
+	}
+	
+	public float getPearsonThreshold() {
+		return pearsonThreshold;
+	}
+	
 }
