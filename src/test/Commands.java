@@ -67,21 +67,6 @@ public class Commands {
 		return result;
 	}
 	
-	// Command class for example:
-	public class ExampleCommand extends Command{
-
-		public ExampleCommand() {
-			super("upload anomalies and analyze results");
-		}
-
-		@Override
-		public void execute() {
-			dio.write(description);
-		}		
-	}
-	
-	// implement here all other commands
-	
 	// 1
 	public class UploadTimeSeriesCsvCommand extends Command{
 
@@ -93,16 +78,18 @@ public class Commands {
 		public void execute() {
 			try {
 				FileWriter clientTrainFile = new FileWriter(sharedState.trainFileName);
-				dio.write("Please upload local train CSV file");
+				dio.write("Please upload your local train CSV file." + System.lineSeparator());
 				clientTrainFile.write(readUntilEndSign());
 				clientTrainFile.close();
+				dio.write("Upload complete." + System.lineSeparator());
 				FileWriter clientTestFile = new FileWriter(sharedState.testFileName);
-				dio.write("Please upload local test CSV file");
+				dio.write("Please upload your local test CSV file." + System.lineSeparator());
 				clientTestFile.write(readUntilEndSign());
 				clientTestFile.close();
+				dio.write("Upload complete." + System.lineSeparator());
 			} catch (IOException e) {
 				
-				dio.write("Server error while executing upload csv file");
+				dio.write("Server error while executing upload csv file" + System.lineSeparator());
 				//e.printStackTrace();
 			}
 		}
@@ -117,8 +104,8 @@ public class Commands {
 
 		@Override
 		public void execute() {
-			dio.write("The current correlation threshold is " + sharedState.AnomalyDetector.getPearsonThreshold());
-			dio.write("Type a new threshold");
+			dio.write("The current correlation threshold is " + sharedState.AnomalyDetector.getPearsonThreshold() + System.lineSeparator());
+			dio.write("Type a new threshold" + System.lineSeparator());
 			sharedState.AnomalyDetector.setPearsonThreshold(Float.parseFloat(dio.readText()));
 		}
 	}
@@ -136,7 +123,7 @@ public class Commands {
 			sharedState.AnomalyDetector.learnNormal(trainTimeSeires);
 			TimeSeries testTimeSeires = new TimeSeries(sharedState.testFileName);
 			sharedState.anomalyDetected = sharedState.AnomalyDetector.detect(testTimeSeires);
-			dio.write("anomaly detection complete");
+			dio.write("anomaly detection complete." + System.lineSeparator());
 		}
 	}
 	
@@ -150,13 +137,32 @@ public class Commands {
 		@Override
 		public void execute() {
 			for(AnomalyReport report: sharedState.anomalyDetected) {
-				dio.write(report.timeStep + "\t" + report.description);
+				dio.write(report.timeStep + "\t" + report.description + System.lineSeparator());
 			}
-			dio.write("Done");
+			dio.write("Done" + System.lineSeparator());
 		}
 	}
 	
-	//4
+	// 5
+	public class ExampleCommand extends Command{
+		
+		public ExampleCommand() {
+			super("upload anomalies and analyze results");
+		}
+		
+		@Override
+		public void execute() {
+			float truePositiveRate = 0;
+			float falsePositiveRate = 0;
+			dio.write("Please upload your local anomalies file." + System.lineSeparator());
+			readUntilEndSign();
+			dio.write("Upload complete" + System.lineSeparator());
+			dio.write("True Positive Rate: " + truePositiveRate + System.lineSeparator());
+			dio.write("False Positive Rate: " + falsePositiveRate + System.lineSeparator());
+		}		
+	}
+	
+	//6
 	public class ExitCommand extends Command{
 		
 		public ExitCommand() {
