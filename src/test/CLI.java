@@ -20,7 +20,7 @@ public class CLI {
 		commands.add(c.new AlgorithmSettingsCommand());
 		commands.add(c.new DetectAnomaliesCommand());
 		commands.add(c.new DisplayResultsCommand());
-		commands.add(c.new ExampleCommand());
+		commands.add(c.new UploadAnomaliesAndAnalyzeResultCommand());
 		commands.add(c.new ExitCommand());
 	}
 	

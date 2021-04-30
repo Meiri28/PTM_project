@@ -2,9 +2,9 @@ package test;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.text.NumberFormat;
 import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.Arrays;
 import java.util.List;
 
 public class Commands {
@@ -40,6 +40,8 @@ public class Commands {
 		public String endSign = "done";
 		
 		List<AnomalyReport> anomalyDetected = null;
+		
+		public int numberofline = 0;
 	}
 	
 	private SharedState sharedState=new SharedState();
@@ -122,6 +124,7 @@ public class Commands {
 			TimeSeries trainTimeSeires = new TimeSeries(sharedState.trainFileName); 
 			sharedState.AnomalyDetector.learnNormal(trainTimeSeires);
 			TimeSeries testTimeSeires = new TimeSeries(sharedState.testFileName);
+			sharedState.numberofline = testTimeSeires.getValuesTable().get(0).size();
 			sharedState.anomalyDetected = sharedState.AnomalyDetector.detect(testTimeSeires);
 			dio.write("anomaly detection complete." + System.lineSeparator());
 		}
@@ -144,22 +147,88 @@ public class Commands {
 	}
 	
 	// 5
-	public class ExampleCommand extends Command{
+	public class UploadAnomaliesAndAnalyzeResultCommand extends Command{
 		
-		public ExampleCommand() {
+		public UploadAnomaliesAndAnalyzeResultCommand() {
 			super("upload anomalies and analyze results");
 		}
 		
 		@Override
 		public void execute() {
-			float truePositiveRate = 0;
-			float falsePositiveRate = 0;
 			dio.write("Please upload your local anomalies file." + System.lineSeparator());
-			readUntilEndSign();
+			ArrayList<String> calculatedTimeLineInput = calcanomalytimeline(sharedState.anomalyDetected);
+			ArrayList<String> userTimeLineInput = new ArrayList<String>(Arrays.asList(readUntilEndSign().split(System.lineSeparator())));
 			dio.write("Upload complete" + System.lineSeparator());
+			sortTimeLine(calculatedTimeLineInput);
+			sortTimeLine(userTimeLineInput);
+			int calcIndex = 0 , UserIndex = 0;
+			int tp=0, fp=0;
+			while(calcIndex < calculatedTimeLineInput.size() && UserIndex < userTimeLineInput.size()) {
+				switch(compereTimeLine(calculatedTimeLineInput.get(calcIndex),userTimeLineInput.get(UserIndex))) {
+					case 0:
+						calcIndex++;
+						UserIndex++;
+						tp++;
+						break;
+					case -1:
+						calcIndex++;
+						fp++;
+						break;
+					case 1:
+						UserIndex++;
+						break;
+				}
+			}
+			fp += calculatedTimeLineInput.size() - calcIndex;
+			int p = userTimeLineInput.size();
+			int n = calcN(userTimeLineInput,sharedState.numberofline);
+			NumberFormat nf = NumberFormat.getNumberInstance();
+			nf.setMaximumFractionDigits(3);
+			nf.setMinimumFractionDigits(1);
+			String truePositiveRate = nf.format((float)tp/p);
+			String falsePositiveRate  = nf.format((float)fp/n);
 			dio.write("True Positive Rate: " + truePositiveRate + System.lineSeparator());
 			dio.write("False Positive Rate: " + falsePositiveRate + System.lineSeparator());
-		}		
+		}
+		
+		private int calcN(ArrayList<String> userTimeLineInput,int numberofline) {
+			int result = 0;
+			for (String timeline: userTimeLineInput) {
+				result += Integer.parseInt(timeline.split(",")[0])-Integer.parseInt(timeline.split(",")[1]) + 1;
+			}
+			return numberofline - result;
+		}
+		
+		private void sortTimeLine(ArrayList<String> timeline) {
+			timeline.sort((s1,s2)->Integer.parseInt(s1.split(",")[0])-Integer.parseInt(s2.split(",")[0]));
+		}
+		
+		private ArrayList<String> calcanomalytimeline(List<AnomalyReport> anomalyDetected) {
+			ArrayList<String> result = new ArrayList<String>();
+			long start, end;
+			for (int i = 0; i < anomalyDetected.size(); i++) {
+				start = anomalyDetected.get(i).timeStep;
+				while(i + 1 < anomalyDetected.size() &&
+						anomalyDetected.get(i).description.equals(anomalyDetected.get(i+1).description) &&
+						anomalyDetected.get(i).timeStep + 1 == anomalyDetected.get(i+1).timeStep)
+					i++;
+				end = anomalyDetected.get(i).timeStep;
+				result.add(start+","+end);
+			}
+			return result;
+		}
+		
+		private int compereTimeLine(String firstTimeline,String SeccondTimeline) {
+			long firstStart = Long.parseLong(firstTimeline.split(",")[0]);
+			long firstend = Long.parseLong(firstTimeline.split(",")[1]);
+			long seccondStart = Long.parseLong(SeccondTimeline.split(",")[0]);
+			long seccondend = Long.parseLong(SeccondTimeline.split(",")[1]);
+			if(firstend  < seccondStart )
+				return -1;
+			if(firstStart > seccondend)
+				return 1;
+			return 0;
+		}
 	}
 	
 	//6
