@@ -1,10 +1,8 @@
 package test;
 
 import java.util.ArrayList;
-
 import test.Commands.Command;
 import test.Commands.DefaultIO;
-import test.Commands.ExitCommand;
 
 public class CLI {
 
@@ -27,7 +25,7 @@ public class CLI {
 	public void start() {
 		int currentCommand =  0;
 		String s;
-		while(commands.get(currentCommand).getClass() != ExitCommand.class) {
+		while(commands.get(currentCommand).getClass() != Commands.ExitCommand.class) {
 			dio.write("Welcome to the Anomaly Detection Server." +  System.lineSeparator()); 
 			dio.write("Please choose an option:" + System.lineSeparator());
 			for (int i = 0; i < commands.size(); i++) {

@@ -2,6 +2,7 @@ package test;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,10 +16,6 @@ public class Commands {
 		public void write(String text);
 		public float readVal();
 		public void write(float val);
-		
-		// you may add default methods here
-		//public void connect();
-		//public void disconnect();
 	}
 	
 	// the default IO to be used in all commands
@@ -29,7 +26,6 @@ public class Commands {
 	
 	// the shared state of all commands
 	private class SharedState{
-		// implement here whatever you need
 		// need to be new SimpleAnomalyDetector TimeSeriesAnomalyDetector
 		// but because i can't change TimeSeriesAnomalyDetector to have threshold i did it that way
 		public SimpleAnomalyDetector AnomalyDetector = new SimpleAnomalyDetector();
@@ -90,9 +86,7 @@ public class Commands {
 				clientTestFile.close();
 				dio.write("Upload complete." + System.lineSeparator());
 			} catch (IOException e) {
-				
 				dio.write("Server error while executing upload csv file" + System.lineSeparator());
-				//e.printStackTrace();
 			}
 		}
 	}
@@ -185,8 +179,9 @@ public class Commands {
 			NumberFormat nf = NumberFormat.getNumberInstance();
 			nf.setMaximumFractionDigits(3);
 			nf.setMinimumFractionDigits(1);
-			String truePositiveRate = nf.format((float)tp/p);
-			String falsePositiveRate  = nf.format((float)fp/n);
+			nf.setRoundingMode(RoundingMode.DOWN);
+			String truePositiveRate = nf.format((float)tp/(float)p);
+			String falsePositiveRate  = nf.format((float)fp/(float)n);
 			dio.write("True Positive Rate: " + truePositiveRate + System.lineSeparator());
 			dio.write("False Positive Rate: " + falsePositiveRate + System.lineSeparator());
 		}
@@ -194,7 +189,7 @@ public class Commands {
 		private int calcN(ArrayList<String> userTimeLineInput,int numberofline) {
 			int result = 0;
 			for (String timeline: userTimeLineInput) {
-				result += Integer.parseInt(timeline.split(",")[0])-Integer.parseInt(timeline.split(",")[1]) + 1;
+				result += Integer.parseInt(timeline.split(",")[1])-Integer.parseInt(timeline.split(",")[0]) + 1;
 			}
 			return numberofline - result;
 		}
@@ -240,7 +235,7 @@ public class Commands {
 		
 		@Override
 		public void execute() {
-			//dio.disconeect();
+			
 		}
 	}
 }

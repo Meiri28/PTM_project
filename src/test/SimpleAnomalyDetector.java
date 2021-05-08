@@ -23,8 +23,9 @@ public class SimpleAnomalyDetector implements TimeSeriesAnomalyDetector {
 		Point [] points = StatLib.makePoint(table[feature1Index], table[feature2Index]);
 		Line lin_reg = StatLib.linear_reg(points);
 		float threshold = 0;
+		float calculatedaddedThreshold = 1 + addedPresentageThreshold;
 		for (int i = 0; i < points.length; i++) {
-			threshold = Math.max(threshold, (1 + addedPresentageThreshold) * StatLib.dev(points[i],lin_reg));
+			threshold = Math.max(threshold, calculatedaddedThreshold * StatLib.dev(points[i],lin_reg));
 		}
 		NormalModel.add(new CorrelatedFeatures(feature1,feature2,corrlation,lin_reg,threshold));
 	}
